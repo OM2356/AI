@@ -1,0 +1,279 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "System administrator and recruiter profile with authorized access",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User UID of the administrator",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the administrator",
+          "maxLength": 256
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the administrator",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "description": "Administrative role (e.g. recruiter, placement_officer, admin)",
+          "enum": ["recruiter", "placement_officer", "admin"]
+        },
+        "organization": {
+          "type": "string",
+          "description": "Company or University name",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of admin registration",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "email", "name", "role", "createdAt"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "Job opening or placement recruitment criteria",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the job opening",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "description": "Designation or job title",
+          "maxLength": 150
+        },
+        "company": {
+          "type": "string",
+          "description": "Hiring company or department name",
+          "maxLength": 150
+        },
+        "description": {
+          "type": "string",
+          "description": "Full job description and responsibilities",
+          "maxLength": 10000
+        },
+        "requiredSkills": {
+          "type": "array",
+          "description": "List of core mandatory and secondary skills required"
+        },
+        "minExperience": {
+          "type": "number",
+          "description": "Minimum years of professional experience required"
+        },
+        "location": {
+          "type": "string",
+          "description": "Job location or Remote mode",
+          "maxLength": 100
+        },
+        "department": {
+          "type": "string",
+          "description": "Department or domain (e.g. Engineering, Marketing)",
+          "maxLength": 100
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the job opening",
+          "enum": ["active", "closed", "draft"]
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of the user who created this job opening",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "title", "company", "description", "createdBy", "createdAt"]
+    },
+    "Candidate": {
+      "title": "Candidate",
+      "description": "Parsed and AI-analyzed candidate resume matching a job",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the candidate record",
+          "maxLength": 128
+        },
+        "jobId": {
+          "type": "string",
+          "description": "Reference to the Job document",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Candidate full name extracted from resume",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "description": "Candidate email address extracted from resume",
+          "maxLength": 200
+        },
+        "phone": {
+          "type": "string",
+          "description": "Candidate contact number",
+          "maxLength": 50
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Original resume file name",
+          "maxLength": 200
+        },
+        "fileType": {
+          "type": "string",
+          "description": "Resume format (pdf or docx)",
+          "enum": ["pdf", "docx", "other"]
+        },
+        "education": {
+          "type": "string",
+          "description": "Highest educational qualification or summary",
+          "maxLength": 500
+        },
+        "extractedSkills": {
+          "type": "array",
+          "description": "List of technical and soft skills identified in resume"
+        },
+        "matchingSkills": {
+          "type": "array",
+          "description": "Skills present in resume that match job requirements"
+        },
+        "missingSkills": {
+          "type": "array",
+          "description": "Required job skills missing from the resume"
+        },
+        "experienceYears": {
+          "type": "number",
+          "description": "Estimated total years of work experience"
+        },
+        "score": {
+          "type": "number",
+          "description": "AI calculated matching score between 0 and 100"
+        },
+        "scoreBreakdown": {
+          "type": "object",
+          "description": "Transparent scoring breakdown across skills, experience, and education"
+        },
+        "strengths": {
+          "type": "array",
+          "description": "Key strengths identified for the role"
+        },
+        "areasForReview": {
+          "type": "array",
+          "description": "Areas or gaps requiring human recruiter review"
+        },
+        "summary": {
+          "type": "string",
+          "description": "AI-generated executive candidate summary",
+          "maxLength": 3000
+        },
+        "status": {
+          "type": "string",
+          "description": "Human review status",
+          "enum": ["pending", "shortlisted", "under_review", "rejected"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Recruiter manual review notes and comments",
+          "maxLength": 2000
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of the recruiter who uploaded this candidate",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "jobId", "name", "score", "status", "createdBy", "createdAt"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "Audit log and recent recruiter activity history",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique activity ID",
+          "maxLength": 128
+        },
+        "action": {
+          "type": "string",
+          "description": "Action type (e.g. upload, analyze, shortlist, create_job)",
+          "maxLength": 100
+        },
+        "candidateName": {
+          "type": "string",
+          "description": "Associated candidate name if applicable",
+          "maxLength": 120
+        },
+        "jobTitle": {
+          "type": "string",
+          "description": "Associated job title",
+          "maxLength": 150
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the user who performed the activity",
+          "maxLength": 128
+        },
+        "userName": {
+          "type": "string",
+          "description": "Name of the user who performed the activity",
+          "maxLength": 100
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp of event",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "action", "userId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Administrator and placement officer profiles"
+    },
+    "/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Recruitment job openings and screening criteria"
+    },
+    "/candidates/{candidateId}": {
+      "schema": "Candidate",
+      "description": "Candidates with parsed resume data, matching scores, and human review status"
+    },
+    "/activities/{activityId}": {
+      "schema": "Activity",
+      "description": "Screening audit logs and recent platform activity"
+    }
+  }
+}

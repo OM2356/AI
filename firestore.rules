@@ -1,0 +1,161 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all unknown paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global security primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'omkarsathe3103@gmail.com'
+      );
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // ==========================================
+    // 1. ADMINS COLLECTION
+    // ==========================================
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['id', 'email', 'name', 'role', 'createdAt'])
+        && data.keys().hasOnly(['id', 'email', 'name', 'role', 'organization', 'createdAt'])
+        && data.id is string && data.id == request.auth.uid
+        && data.email is string && data.email.size() <= 256
+        && data.name is string && data.name.size() <= 100
+        && data.role in ['recruiter', 'placement_officer', 'admin']
+        && (!('organization' in data) || (data.organization is string && data.organization.size() <= 200))
+        && data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && (isUser(adminId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && isValidId(adminId) && adminId == request.auth.uid && isValidAdmin(incoming());
+      allow update: if isSignedIn() && isValidId(adminId) && isUser(adminId) && isValidAdmin(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'organization', 'role']);
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // 2. JOBS COLLECTION
+    // ==========================================
+    function isValidJob(data) {
+      return data.keys().hasAll(['id', 'title', 'company', 'description', 'createdBy', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 150
+        && data.company is string && data.company.size() > 0 && data.company.size() <= 150
+        && data.description is string && data.description.size() <= 10000
+        && data.createdBy is string && data.createdBy == request.auth.uid
+        && data.createdAt is string && data.createdAt.size() <= 64
+        && (!('requiredSkills' in data) || data.requiredSkills is list)
+        && (!('minExperience' in data) || data.minExperience is number)
+        && (!('location' in data) || (data.location is string && data.location.size() <= 100))
+        && (!('department' in data) || (data.department is string && data.department.size() <= 100))
+        && (!('status' in data) || data.status in ['active', 'closed', 'draft'])
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    match /jobs/{jobId} {
+      allow get: if isSignedIn() && isValidId(jobId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(jobId) && isValidJob(incoming());
+      allow update: if isSignedIn() && isValidId(jobId) && isValidJob(incoming())
+        && (existing().createdBy == request.auth.uid || isAdmin())
+        && incoming().createdBy == existing().createdBy
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && isValidId(jobId) && (existing().createdBy == request.auth.uid || isAdmin());
+    }
+
+    // ==========================================
+    // 3. CANDIDATES COLLECTION
+    // ==========================================
+    function isValidCandidate(data) {
+      return data.keys().hasAll(['id', 'jobId', 'name', 'score', 'status', 'createdBy', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.jobId is string && data.jobId.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 120
+        && data.score is number && data.score >= 0 && data.score <= 100
+        && data.status in ['pending', 'shortlisted', 'under_review', 'rejected']
+        && data.createdBy is string && data.createdBy == request.auth.uid
+        && data.createdAt is string && data.createdAt.size() <= 64
+        && (!('email' in data) || (data.email is string && data.email.size() <= 200))
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 50))
+        && (!('fileName' in data) || (data.fileName is string && data.fileName.size() <= 200))
+        && (!('fileType' in data) || data.fileType in ['pdf', 'docx', 'other'])
+        && (!('education' in data) || (data.education is string && data.education.size() <= 500))
+        && (!('extractedSkills' in data) || data.extractedSkills is list)
+        && (!('matchingSkills' in data) || data.matchingSkills is list)
+        && (!('missingSkills' in data) || data.missingSkills is list)
+        && (!('experienceYears' in data) || data.experienceYears is number)
+        && (!('scoreBreakdown' in data) || data.scoreBreakdown is map)
+        && (!('strengths' in data) || data.strengths is list)
+        && (!('areasForReview' in data) || data.areasForReview is list)
+        && (!('summary' in data) || (data.summary is string && data.summary.size() <= 3000))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    match /candidates/{candidateId} {
+      allow get: if isSignedIn() && isValidId(candidateId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(candidateId) && isValidCandidate(incoming());
+      allow update: if isSignedIn() && isValidId(candidateId) && isValidCandidate(incoming())
+        && (existing().createdBy == request.auth.uid || isAdmin())
+        && incoming().createdBy == existing().createdBy
+        && incoming().createdAt == existing().createdAt
+        && incoming().jobId == existing().jobId;
+      allow delete: if isSignedIn() && isValidId(candidateId) && (existing().createdBy == request.auth.uid || isAdmin());
+    }
+
+    // ==========================================
+    // 4. ACTIVITIES COLLECTION
+    // ==========================================
+    function isValidActivity(data) {
+      return data.keys().hasAll(['id', 'action', 'userId', 'timestamp'])
+        && data.id is string && data.id.size() <= 128
+        && data.action is string && data.action.size() <= 100
+        && data.userId is string && data.userId == request.auth.uid
+        && data.timestamp is string && data.timestamp.size() <= 64
+        && (!('candidateName' in data) || (data.candidateName is string && data.candidateName.size() <= 120))
+        && (!('jobTitle' in data) || (data.jobTitle is string && data.jobTitle.size() <= 150))
+        && (!('userName' in data) || (data.userName is string && data.userName.size() <= 100));
+    }
+
+    match /activities/{activityId} {
+      allow get: if isSignedIn() && isValidId(activityId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(activityId) && isValidActivity(incoming());
+      allow update: if false; // Activities are append-only audit logs
+      allow delete: if isAdmin();
+    }
+  }
+}

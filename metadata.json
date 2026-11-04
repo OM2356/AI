@@ -1,0 +1,6 @@
+{
+  "name": "AI Resume Screening System",
+  "description": "AI-powered recruitment and candidate screening platform with resume parsing, Gemini job matching, transparent scoring, and candidate ranking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
